@@ -1,15 +1,17 @@
 // app/page.tsx
 "use client";
-import { useState, useCallback, useRef, useEffect } from 'react';
-import CameraPreview from './components/CameraPreview';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
-import { Button } from "@/components/ui/button";
-import { GemmaWebSocket } from './services/gemmaWebSocket';
+
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { addDoc, collection, getFirestore } from 'firebase/firestore';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import { Button } from "@/components/ui/button";
+import CameraPreview from './components/CameraPreview';
+import { GemmaWebSocket } from './services/gemmaWebSocket';
 import Image from 'next/image';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { initializeApp } from 'firebase/app';
 
 // First, make sure Firebase is initialized
 const firebaseConfig = {
@@ -136,7 +138,7 @@ const GemmaMessage = ({ text, date, imageUrl }: { text: string, date?: Date, ima
   </div>
 );
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -287,5 +289,13 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
