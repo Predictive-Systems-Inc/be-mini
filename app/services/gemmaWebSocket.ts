@@ -1,71 +1,11 @@
 import { TranscriptionService } from './transcriptionService';
 import { pcmToWav } from '../utils/audioUtils';
 
-const MODEL = "models/gemma-2.5-flash-live-preview";
-const API_KEY = process.env.NEXT_PUBLIC_GEMMA_API_KEY;
-const HOST = "generativelanguage.googleapis.com";
-// const WS_URL = `wss://${HOST}/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${API_KEY}`;
+const MODEL = "models/gemma-3n";
+// const WS_URL = "ws://localhost:8080/ws/psi.be.v0.gemma3n.GenerateContent";
 const WS_URL = "wss://ymhhvwsjp7v90d-8080.proxy.runpod.net/ws/psi.be.v0.gemma3n.GenerateContent";
 
 
-const TOPIC_INSTRUCTIONS = {
-  "Displacement and Velocity": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on the concepts of displacement and velocity." },
-      { text: "You will ask series of questions to assess the student's understanding of these concepts." },
-      { text: "Make sure to ask follow up questions to clarify the student's response and get sufficient information to assess their understanding." },
-      { text: "Cover the following topics: distance vs displacement, speed vs velocity, vector quantities, and graphical analysis of motion." },
-      { text: "You speak like vice ganda in filipino to make student comfortable depending on their response." },
-    ]
-  },
-  "Soccer": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on projectile motion using soccer scenarios." },
-      { text: "You will ask series of questions to assess the student's understanding of projectile motion in soccer." },
-      { text: "Use this figure to help you explain the problem and given scenario: " },
-      { text: "The soccer player kicks the ball in the Figure above with an initial velocity of 35 m/s at an angle of 20⁰. (a) Calculate for the time when it reaches 0.40 m. (b) Find its position parallel to the field at height equal to 0.40 m. (c) Find the time when it reaches its highest point. (d) At what point is the ball at its highest and farthest?" },
-      { text: "Make sure to ask follow up questions about the soccer ball's trajectory, time of flight, and maximum height." },
-      { text: "Cover the following topics: initial velocity, launch angle, time to reach specific heights, maximum height, and horizontal distance." },
-      { text: "You speak in English to make student comfortable depending on their response." },      
-    ]
-  },
-  "Acceleration": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on the concept of acceleration." },
-      { text: "You will ask series of questions to assess the student's understanding of acceleration." },
-      { text: "Make sure to ask follow up questions about acceleration in different scenarios: speeding up, slowing down, and changing direction." },
-      { text: "Cover the following topics: definition of acceleration, units of measurement, acceleration due to gravity, and acceleration in everyday situations." },
-      { text: "You speak in English to make student comfortable depending on their response." },
-    ]
-  },
-  "Newton's Laws of Motion": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on Newton's Laws of Motion." },
-      { text: "You will ask series of questions to assess the student's understanding of all three laws." },
-      { text: "Make sure to ask follow up questions about real-world applications of each law." },
-      { text: "Cover the following topics: inertia, force and acceleration relationships, action-reaction pairs." },
-      { text: "You speak in English to make student comfortable depending on their response." },
-    ]
-  },
-  "Freefall and Projectile Motion": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on the concepts of freefall and projectile motion." },
-      { text: "You will ask series of questions to assess the student's understanding of these concepts." },
-      { text: "Make sure to ask follow up questions to clarify the student's response and get sufficient information to assess their understanding." },
-      { text: "Cover the following topics: freefall, projectile motion, and the effect of gravity on moving objects." },
-      { text: "You speak in English to make student comfortable depending on their response." },
-    ]
-  },
-  "Circular Motion": {
-    parts: [
-      { text: "You are Teacher Be, a teacher that reviews students on circular motion." },
-      { text: "You will ask series of questions to assess the student's understanding of objects moving in circles." },
-      { text: "Make sure to ask follow up questions about centripetal force, angular velocity, and period of rotation." },
-      { text: "Cover the following topics: uniform circular motion, centripetal acceleration, and real-world applications." },
-      { text: "You speak in English to make student comfortable depending on their response." },
-    ]
-  }
-} as const;
 
 export class GemmaWebSocket {
   private ws: WebSocket | null = null;
@@ -85,7 +25,7 @@ export class GemmaWebSocket {
   private onTranscriptionCallback: ((text: string, date: Date, isHuman: boolean) => void) | null = null;
   private transcriptionService: TranscriptionService;
   private accumulatedPcmData: string[] = [];
-  private currentTopic: keyof typeof TOPIC_INSTRUCTIONS = "Freefall and Projectile Motion";
+  private currentTopic: string = "general";
 
   constructor(
     onMessage: (text: string) => void,
@@ -93,7 +33,7 @@ export class GemmaWebSocket {
     onPlayingStateChange: (isPlaying: boolean) => void,
     onAudioLevelChange: (level: number) => void,
     onTranscription: (text: string, date: Date, isHuman: boolean) => void,
-    initialTopic: keyof typeof TOPIC_INSTRUCTIONS = "Freefall and Projectile Motion"
+    initialTopic: string = "general"
   ) {
     this.onMessageCallback = onMessage;
     this.onSetupCompleteCallback = onSetupComplete;
@@ -180,7 +120,11 @@ export class GemmaWebSocket {
           max_output_tokens: 300,
         },
         system_instruction: {
-          parts: TOPIC_INSTRUCTIONS[this.currentTopic].parts,
+          parts: [
+            { text: "You are Teacher Be, an AI assistant that helps students with their learning." },
+            { text: "You will engage in conversations and provide helpful responses." },
+            { text: "You speak in a friendly and educational manner." },
+          ],
         },
       },
     };
@@ -389,7 +333,7 @@ export class GemmaWebSocket {
     this.stopCurrentAudio();
   }
 
-  setTopic(topic: keyof typeof TOPIC_INSTRUCTIONS) {
+  setTopic(topic: string) {
     this.currentTopic = topic;
     
     // Clean up existing connection
